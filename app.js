@@ -8,14 +8,7 @@ const userList = document.querySelector('#user-list');
 window.addEventListener('load', () => {
   const users = JSON.parse(localStorage.getItem('users')) || [];
   users.forEach(user => {
-    const li = document.createElement('li');
-    li.textContent = `${user.name} - ${user.email} - ${user.phone}`;
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.addEventListener('click', () => {
-      deleteUser(user);
-    });
-    li.appendChild(deleteBtn);
+    const li = createUserListItem(user);
     userList.appendChild(li);
   });
 });
@@ -29,8 +22,31 @@ form.addEventListener('submit', event => {
     phone: phoneInput.value
   };
   const users = JSON.parse(localStorage.getItem('users')) || [];
-  users.push(user);
-  localStorage.setItem('users', JSON.stringify(users));
+  const existingUser = users.find(u => u.email === user.email);
+  if (existingUser) {
+    const index = users.indexOf(existingUser);
+    users.splice(index, 1, user);
+    localStorage.setItem('users', JSON.stringify(users));
+    const li = Array.from(userList.children).find(li => {
+      const [liName, liEmail, liPhone] = li.textContent.split(' - ');
+      return liEmail === user.email;
+    });
+    if (li) {
+      li.innerHTML = '';
+      const updatedLi = createUserListItem(user);
+      li.appendChild(updatedLi.firstChild);
+    }
+  } else {
+    users.push(user);
+    localStorage.setItem('users', JSON.stringify(users));
+    const li = createUserListItem(user);
+    userList.appendChild(li);
+  }
+  form.reset();
+});
+
+// Create user list item with delete and edit buttons
+function createUserListItem(user) {
   const li = document.createElement('li');
   li.textContent = `${user.name} - ${user.email} - ${user.phone}`;
   const deleteBtn = document.createElement('button');
@@ -38,10 +54,15 @@ form.addEventListener('submit', event => {
   deleteBtn.addEventListener('click', () => {
     deleteUser(user);
   });
+  const editBtn = document.createElement('button');
+  editBtn.textContent = 'Edit';
+  editBtn.addEventListener('click', () => {
+    editUser(user);
+  });
   li.appendChild(deleteBtn);
-  userList.appendChild(li);
-  form.reset();
-});
+  li.appendChild(editBtn);
+  return li;
+}
 
 // Delete user from local storage and list
 function deleteUser(user) {
@@ -55,4 +76,11 @@ function deleteUser(user) {
   if (li) {
     userList.removeChild(li);
   }
+}
+
+// Edit user information
+function editUser(user) {
+  nameInput.value = user.name;
+  emailInput.value = user.email;
+  phoneInput.value = user.phone;
 }
